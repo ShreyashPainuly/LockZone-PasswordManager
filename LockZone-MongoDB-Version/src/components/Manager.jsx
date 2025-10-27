@@ -12,7 +12,7 @@ const Manager = () => {
     const [passwordArray, setPasswordArray] = useState([]);
 
     const getPasswords = async() => {
-        let req = await fetch("http://localhost:3000/")
+        let req = await fetch("https://lockzone-backend.onrender.com")
         let passwords = await req.json()
         console.log(passwords);
         setPasswordArray(passwords);
@@ -52,7 +52,7 @@ const Manager = () => {
             const newPassword = { ...form, id: uuidv4() };
             
             // Save to backend first
-            await fetch("http://localhost:3000/", {
+            await fetch("https://lockzone-backend.onrender.com", {
                 method: "POST",
                 body: JSON.stringify(newPassword),
                 headers: {"Content-Type": "application/json"}
@@ -87,7 +87,7 @@ const Manager = () => {
         let confirmation = confirm("Are you sure you want to delete this password?")
         if(confirmation) {
             setPasswordArray(passwordArray.filter(item=> item.id !== id));
-            let res = await fetch("http://localhost:3000/", {
+            let res = await fetch("https://lockzone-backend.onrender.com", {
                 method: "DELETE", 
                 body: JSON.stringify({id}), 
                 headers: {"Content-Type": "application/json"}
