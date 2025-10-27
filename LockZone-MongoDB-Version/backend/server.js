@@ -12,7 +12,7 @@ const client = new MongoClient(process.env.MONGO_URI);
 // Database Name
 const dbName = process.env.DB_NAME;
 const app = express()
-const port = 3000
+const port = const port = process.env.PORT || 3000;
 app.use(bodyparser.json())
 app.use(cors())
 
