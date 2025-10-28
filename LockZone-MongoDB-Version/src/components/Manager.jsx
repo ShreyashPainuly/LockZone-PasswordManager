@@ -12,10 +12,15 @@ const Manager = () => {
     const [passwordArray, setPasswordArray] = useState([]);
 
     const getPasswords = async() => {
-        let req = await fetch("https://lockzone-backend.onrender.com")
-        let passwords = await req.json()
-        console.log(passwords);
-        setPasswordArray(passwords);
+        try {
+            let req = await fetch("https://lockzone-backend.onrender.com")
+            let passwords = await req.json()
+            console.log(passwords);
+            setPasswordArray(passwords);
+        } catch (error) {
+            console.error("Error fetching passwords:", error);
+            setPasswordArray([]);
+        }
     }
 
     useEffect(() => {
@@ -49,30 +54,55 @@ const Manager = () => {
 
     const savePassword = async () => {
         if(form.site.length > 3 && form.username.length > 3 && form.password.length > 3) {
-            const newPassword = { ...form, id: uuidv4() };
-            
-            // Save to backend first
-            await fetch("https://lockzone-backend.onrender.com", {
-                method: "POST",
-                body: JSON.stringify(newPassword),
-                headers: {"Content-Type": "application/json"}
-            });
-            
-            // Update state
-            setPasswordArray([...passwordArray, newPassword]);
-            
-            // Clear form - THIS WAS THE FIX!
-            setform({ site: "", username: "", password: "" });
-            
-            toast.success('Password saved successfully!', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                theme: "light",
-            });
+            try {
+                // Check if editing existing password (form has id) or creating new one
+                const passwordData = form.id 
+                    ? { ...form }  // Editing: keep existing id
+                    : { ...form, id: uuidv4() };  // New: generate new id
+                
+                // Delete old entry if editing
+                if (form.id) {
+                    await fetch("https://lockzone-backend.onrender.com", {
+                        method: "DELETE", 
+                        body: JSON.stringify({id: form.id}), 
+                        headers: {"Content-Type": "application/json"}
+                    });
+                }
+                
+                // Save to backend
+                const response = await fetch("https://lockzone-backend.onrender.com", {
+                    method: "POST",
+                    body: JSON.stringify(passwordData),
+                    headers: {"Content-Type": "application/json"}
+                });
+                
+                if (response.ok) {
+                    // Update state
+                    setPasswordArray([...passwordArray, passwordData]);
+                    
+                    // Clear form
+                    setform({ site: "", username: "", password: "" });
+                    
+                    toast.success('Password saved successfully!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        theme: "light",
+                    });
+                } else {
+                    throw new Error('Failed to save password');
+                }
+            } catch (error) {
+                console.error("Error saving password:", error);
+                toast.error('Error saving password! Check if backend is running.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    theme: "light",
+                });
+            }
         } else {
             toast.error('All fields must be at least 4 characters!', {
                 position: "top-right",
@@ -86,17 +116,31 @@ const Manager = () => {
         console.log("Deleting password with id", id)
         let confirmation = confirm("Are you sure you want to delete this password?")
         if(confirmation) {
-            setPasswordArray(passwordArray.filter(item=> item.id !== id));
-            let res = await fetch("https://lockzone-backend.onrender.com", {
-                method: "DELETE", 
-                body: JSON.stringify({id}), 
-                headers: {"Content-Type": "application/json"}
-            })
-            toast.success('Password deleted successfully!', {
-                position: "top-right",
-                autoClose: 3000,
-                theme: "light",
-            });
+            try {
+                setPasswordArray(passwordArray.filter(item=> item.id !== id));
+                let res = await fetch("https://lockzone-backend.onrender.com", {
+                    method: "DELETE", 
+                    body: JSON.stringify({id}), 
+                    headers: {"Content-Type": "application/json"}
+                });
+                
+                if (res.ok) {
+                    toast.success('Password deleted successfully!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        theme: "light",
+                    });
+                } else {
+                    throw new Error('Failed to delete password');
+                }
+            } catch (error) {
+                console.error("Error deleting password:", error);
+                toast.error('Error deleting password!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    theme: "light",
+                });
+            }
         }       
     };
 
